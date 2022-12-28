@@ -14,6 +14,7 @@ use linux_apex_hypervisor::hypervisor::config::Config;
 use linux_apex_hypervisor::hypervisor::linux::Hypervisor;
 use log::LevelFilter;
 use nix::sys::signal::*;
+use nix::unistd::Uid;
 
 /// Hypervisor based on cgroups in Linux
 #[derive(Parser, Debug)]
@@ -91,6 +92,12 @@ fn main() -> LeveledResult<()> {
     let mut config: Config =
         serde_yaml::from_reader(&f).lev_typ(SystemError::Config, ErrorLevel::ModuleInit)?;
     config.cgroup = cgroup;
+
+    // We must have root privileges for moving interfaces!
+    if !config.partitions.iter().all(|x| x.interfaces.is_empty()) && Uid::effective() != 0.into() {
+        return Err(anyhow!("Lacking root privileges for moving interfaces"))
+            .lev_typ(SystemError::Panic, ErrorLevel::ModuleRun);
+    }
 
     let terminate_after = args.duration.map(|d| d.into());
 
