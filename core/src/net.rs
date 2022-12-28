@@ -7,6 +7,11 @@ use nix::unistd::Pid;
 use regex::Regex;
 
 /// Moves interface iname to the network namespace of PID
+///
+/// Keep in mind, that the interface **is not** being moved
+/// back to the original namespace. Beside this, most configuration
+/// done for the interface, including it's IP address, get lost
+/// when moving it to a different namespace.
 pub fn move_to_ns(iname: &str, pid: Pid) -> anyhow::Result<()> {
     let cmd = Command::new("sh")
         .arg("-c")
