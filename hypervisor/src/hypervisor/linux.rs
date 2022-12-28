@@ -68,8 +68,13 @@ impl Hypervisor {
             }
             hv.partitions.insert(
                 p.name.clone(),
-                Partition::new(hv.cg.get_path(), p.clone(), &hv.sampling_channel)
-                    .lev(ErrorLevel::ModuleInit)?,
+                Partition::new(
+                    hv.cg.get_path(),
+                    p.clone(),
+                    &hv.sampling_channel,
+                    &p.interfaces,
+                )
+                .lev(ErrorLevel::ModuleInit)?,
             );
         }
 

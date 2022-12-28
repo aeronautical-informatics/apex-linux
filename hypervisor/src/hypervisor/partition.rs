@@ -18,6 +18,7 @@ use linux_apex_core::file::TempFile;
 use linux_apex_core::health::PartitionHMTable;
 use linux_apex_core::health_event::PartitionCall;
 use linux_apex_core::ipc::{channel_pair, IpcReceiver};
+use linux_apex_core::net;
 use linux_apex_core::partition::{PartitionConstants, SamplingConstant};
 use linux_apex_core::sampling::Sampling;
 use nix::mount::{mount, umount2, MntFlags, MsFlags};
@@ -248,6 +249,11 @@ impl Run {
             base.name()
         );
 
+        for iname in &base.interfaces {
+            debug!("Moving interface {iname} to namespace of {pid}");
+            net::move_to_ns(iname, Pid::from_raw(pid)).unwrap();
+        }
+
         //let pid_fd = PidFd::try_from(Pid::from_raw(pid));
         let pid = Pid::from_raw(pid);
 
@@ -426,6 +432,7 @@ pub(crate) struct Base {
     duration: Duration,
     period: Duration,
     working_dir: TempDir,
+    interfaces: Vec<String>,
 }
 
 impl Base {
@@ -472,6 +479,7 @@ impl Partition {
         cgroup_root: P,
         config: PartitionConfig,
         sampling: &HashMap<String, Sampling>,
+        interfaces: &Vec<String>,
     ) -> TypedResult<Self> {
         // Todo implement drop for cgroup (in error case)
         let cgroup = CGroup::new_root(cgroup_root, &config.name).typ(SystemError::PartitionInit)?;
@@ -494,6 +502,7 @@ impl Partition {
             working_dir,
             hm: config.hm_table,
             sampling_channel,
+            interfaces: interfaces.clone(),
         };
         // TODO use StartCondition::HmModuleRestart in case of a ModuleRestart!!
         let run =
