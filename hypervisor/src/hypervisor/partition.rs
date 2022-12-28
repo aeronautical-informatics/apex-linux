@@ -479,7 +479,7 @@ impl Partition {
         cgroup_root: P,
         config: PartitionConfig,
         sampling: &HashMap<String, Sampling>,
-        interfaces: &Vec<String>,
+        interfaces: Vec<String>,
     ) -> TypedResult<Self> {
         // Todo implement drop for cgroup (in error case)
         let cgroup = CGroup::new_root(cgroup_root, &config.name).typ(SystemError::PartitionInit)?;
@@ -502,7 +502,7 @@ impl Partition {
             working_dir,
             hm: config.hm_table,
             sampling_channel,
-            interfaces: interfaces.clone(),
+            interfaces: interfaces,
         };
         // TODO use StartCondition::HmModuleRestart in case of a ModuleRestart!!
         let run =

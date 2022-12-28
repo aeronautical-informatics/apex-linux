@@ -72,7 +72,7 @@ impl Hypervisor {
                     hv.cg.get_path(),
                     p.clone(),
                     &hv.sampling_channel,
-                    &p.interfaces,
+                    p.interfaces.clone(),
                 )
                 .lev(ErrorLevel::ModuleInit)?,
             );
