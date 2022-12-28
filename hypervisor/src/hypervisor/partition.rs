@@ -102,6 +102,18 @@ impl Run {
         .typ(SystemError::Panic)?
         {
             0 => {
+                // Checks if all configured interfaces are available, by obtaining
+                // the list of all available interfaces and check if base.interfaces
+                // is a subset of it.
+                if !base.interfaces.is_empty() {
+                    trace!("Checking the interfaces");
+                    let mut available_ifs = net::get_interfaces().unwrap();
+                    while !base.interfaces.iter().all(|x| available_ifs.contains(x)) {
+                        trace!("Re-checking the interfaces");
+                        available_ifs = net::get_interfaces().unwrap();
+                    }
+                }
+
                 // Map User and user group (required for tmpfs mounts)
                 std::fs::write(
                     PathBuf::from("/proc/self").join("uid_map"),
