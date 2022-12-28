@@ -262,7 +262,7 @@ impl Run {
         );
 
         for iname in &base.interfaces {
-            debug!("Moving interface {iname} to namespace of {pid}");
+            info!("Moving interface {iname} to namespace of {pid}");
             net::move_to_ns(iname, Pid::from_raw(pid)).unwrap();
         }
 
