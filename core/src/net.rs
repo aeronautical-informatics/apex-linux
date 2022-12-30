@@ -13,6 +13,11 @@ use regex::Regex;
 /// done for the interface, including it's IP address, get lost
 /// when moving it to a different namespace.
 pub fn move_to_ns(iname: &str, pid: Pid) -> anyhow::Result<()> {
+    // Prevent CMD injections by only allowing [A-Za-z0-9_]
+    if !iname.chars().all(|c| char::is_ascii_alphanumeric(&c)) {
+        bail!("interface name is not well-formatted")
+    }
+
     let cmd = Command::new("ip")
         .arg("link")
         .arg("set")
