@@ -13,9 +13,13 @@ use regex::Regex;
 /// done for the interface, including it's IP address, get lost
 /// when moving it to a different namespace.
 pub fn move_to_ns(iname: &str, pid: Pid) -> anyhow::Result<()> {
-    let cmd = Command::new("sh")
-        .arg("-c")
-        .arg("ip link set dev ".to_string() + iname + " netns " + &pid.to_string())
+    let cmd = Command::new("ip")
+        .arg("link")
+        .arg("set")
+        .arg("dev")
+        .arg(iname)
+        .arg("netns")
+        .arg(pid.to_string())
         .output()?;
 
     if cmd.status.success() {
