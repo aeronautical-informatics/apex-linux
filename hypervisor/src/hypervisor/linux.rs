@@ -66,15 +66,22 @@ impl Hypervisor {
                 return Err(anyhow!("Partition \"{}\" already exists", p.name))
                     .lev_typ(SystemError::PartitionConfig, ErrorLevel::ModuleInit);
             }
+
+            let mut veth: Vec<Vec<String>> = Vec::with_capacity(p.veth.len());
+            for p in &p.veth {
+                let v: Vec<String> = p.split(":").map(|s| String::from(s)).collect();
+                if v.len() != 2 || v[0].len() < 1 || v[1].len() < 1 {
+                    return Err(anyhow!("veth pair {p} is malformatted"))
+                        .lev_typ(SystemError::PartitionConfig, ErrorLevel::ModuleInit);
+                }
+
+                veth.push(v);
+            }
+
             hv.partitions.insert(
                 p.name.clone(),
-                Partition::new(
-                    hv.cg.get_path(),
-                    p.clone(),
-                    &hv.sampling_channel,
-                    p.interfaces.clone(),
-                )
-                .lev(ErrorLevel::ModuleInit)?,
+                Partition::new(hv.cg.get_path(), p.clone(), &hv.sampling_channel, veth)
+                    .lev(ErrorLevel::ModuleInit)?,
             );
         }
 

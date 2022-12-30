@@ -39,7 +39,7 @@ pub struct Partition {
     #[serde(default)]
     pub hm_table: PartitionHMTable,
     #[serde(default)]
-    pub interfaces: Vec<String>,
+    pub veth: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]

@@ -94,7 +94,7 @@ fn main() -> LeveledResult<()> {
     config.cgroup = cgroup;
 
     // We must have root privileges for moving interfaces!
-    if !config.partitions.iter().all(|x| x.interfaces.is_empty()) && Uid::effective() != 0.into() {
+    if !config.partitions.iter().all(|x| x.veth.is_empty()) && Uid::effective() != 0.into() {
         return Err(anyhow!("Lacking root privileges for moving interfaces"))
             .lev_typ(SystemError::Panic, ErrorLevel::ModuleRun);
     }

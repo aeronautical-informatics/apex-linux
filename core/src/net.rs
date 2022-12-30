@@ -6,35 +6,44 @@ use anyhow::bail;
 use nix::unistd::Pid;
 use regex::Regex;
 
-/// Moves interface iname to the network namespace of PID
-///
-/// Keep in mind, that the interface **is not** being moved
-/// back to the original namespace. Beside this, most configuration
-/// done for the interface, including it's IP address, get lost
-/// when moving it to a different namespace.
-pub fn move_to_ns(iname: &str, pid: Pid) -> anyhow::Result<()> {
-    // Prevent CMD injections by only allowing [A-Za-z0-9_]
-    if !iname.chars().all(|c| char::is_ascii_alphanumeric(&c)) {
-        bail!("interface name is not well-formatted")
+pub struct VethPair {}
+
+impl VethPair {
+    pub fn new(p1: &str, p2: &str, pid: Pid) -> anyhow::Result<Self> {
+        // Prevent CMD injections by only allowing [A-Za-z0-9_]
+        if !p1.chars().all(|c| char::is_ascii_alphanumeric(&c))
+            || !p2.chars().all(|c| char::is_ascii_alphanumeric(&c))
+        {
+            bail!("interface name is not well-formatted")
+        }
+
+        let cmd = Command::new("ip")
+            .arg("link")
+            .arg("add")
+            .arg(p1)
+            .arg("type")
+            .arg("veth")
+            .arg("peer")
+            .arg(p2)
+            .arg("netns")
+            .arg(pid.to_string())
+            .output()?;
+
+        if cmd.status.success() {
+            Ok(Self {})
+        } else {
+            bail!("{}", String::from_utf8(cmd.stderr)?)
+        }
     }
 
-    let cmd = Command::new("ip")
-        .arg("link")
-        .arg("set")
-        .arg("dev")
-        .arg(iname)
-        .arg("netns")
-        .arg(pid.to_string())
-        .output()?;
-
-    if cmd.status.success() {
-        Ok(())
-    } else {
-        bail!("{}", String::from_utf8(cmd.stderr)?)
-    }
+    // A Drop trait is not necessary, because the veth interface pair will
+    // automatically be deleted, if one side of the pair gets deleted, which
+    // is the case when the child net namespace goes out of scope.
 }
 
 /// Returns all interfaces available in the current namespace
+///
+/// The '@' part of an interface will not be included.
 pub fn get_interfaces() -> anyhow::Result<Vec<String>> {
     let cmd = Command::new("sh").arg("-c").arg("ip address").output()?;
     if !cmd.status.success() {
@@ -42,7 +51,7 @@ pub fn get_interfaces() -> anyhow::Result<Vec<String>> {
     }
 
     let str = String::from_utf8(cmd.stdout)?;
-    let re = Regex::new(r"^\d+: (.+):")?;
+    let re = Regex::new(r"^\d+: ([\w\d]+)")?;
     let mut result: Vec<String> = Vec::new();
 
     for line in str.lines() {
